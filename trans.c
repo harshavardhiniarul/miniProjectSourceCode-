@@ -10,6 +10,8 @@ struct clientData
     char lastName[15];    // account last name
     char firstName[10];   // account first name
     double balance;       // account balance
+    double loan;   // NEW: stores loan amount
+    
 }; // end structure clientData
 
 // prototypes
@@ -18,6 +20,8 @@ void textFile(FILE *readPtr);
 void updateRecord(FILE *fPtr);
 void newRecord(FILE *fPtr);
 void deleteRecord(FILE *fPtr);
+void applyLoan(FILE *fPtr);
+void repayLoan(FILE *fPtr);
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +36,7 @@ int main(int argc, char *argv[])
     }
 
     // enable user to specify action
-    while ((choice = enterChoice()) != 5)
+    while ((choice = enterChoice()) != 7)
     {
         switch (choice)
         {
@@ -53,6 +57,14 @@ int main(int argc, char *argv[])
             deleteRecord(cfPtr);
             break;
         // display if user does not select valid choice
+        case 5:
+            applyLoan(cfPtr);
+            break;
+
+        case 6:
+            repayLoan(cfPtr);
+            break;
+        
         default:
             puts("Incorrect choice");
             break;
@@ -181,6 +193,7 @@ void newRecord(FILE *fPtr)
 {
     // create clientData with default information
     struct clientData client = {0, "", "", 0.0};
+    client.loan = 0; 
     unsigned int accountNum; // account number
 
     // obtain number of account to create
@@ -214,19 +227,97 @@ void newRecord(FILE *fPtr)
         fwrite(&client, sizeof(struct clientData), 1, fPtr);
     } // end else
 } // end function newRecord
+void applyLoan(FILE *fPtr)
+{
+    struct clientData client = {0};
+    unsigned int account;
+    double amount;
+
+    printf("Enter account number (1 - 100): ");
+    scanf("%u", &account);
+
+    if (account < 1 || account > 100)
+    {
+        printf("Invalid account number.\n");
+        return;
+    }
+
+    fseek(fPtr, (account - 1) * sizeof(struct clientData), SEEK_SET);
+    fread(&client, sizeof(struct clientData), 1, fPtr);
+
+    if (client.acctNum == 0)
+    {
+        printf("Account not found.\n");
+        return;
+    }
+
+    printf("Enter loan amount: ");
+    scanf("%lf", &amount);
+
+    if (amount <= 0)
+    {
+        printf("Invalid amount.\n");
+        return;
+    }
+
+    client.loan += amount;
+    client.balance += amount;  // add to balance
+
+    fseek(fPtr, -(long)sizeof(struct clientData), SEEK_CUR);
+    fwrite(&client, sizeof(struct clientData), 1, fPtr);
+
+    printf("Loan added successfully!\n");
+}
+void repayLoan(FILE *fPtr)
+{
+    struct clientData client = {0};
+    unsigned int account;
+    double amount;
+
+    printf("Enter account number (1 - 100): ");
+    scanf("%u", &account);
+
+    fseek(fPtr, (account - 1) * sizeof(struct clientData), SEEK_SET);
+    fread(&client, sizeof(struct clientData), 1, fPtr);
+
+    if (client.acctNum == 0)
+    {
+        printf("Account not found.\n");
+        return;
+    }
+
+    printf("Current loan: %.2f\n", client.loan);
+    printf("Enter repayment amount: ");
+    scanf("%lf", &amount);
+
+    if (amount <= 0 || amount > client.loan)
+    {
+        printf("Invalid amount.\n");
+        return;
+    }
+
+    client.loan -= amount;
+    client.balance -= amount;
+
+    fseek(fPtr, -(long)sizeof(struct clientData), SEEK_CUR);
+    fwrite(&client, sizeof(struct clientData), 1, fPtr);
+
+    printf("Loan repaid successfully!\n");
+}
 
 // enable user to input menu choice
 unsigned int enterChoice(void)
 {
     unsigned int menuChoice; // variable to store user's choice
     // display available options
-    printf("%s", "\nEnter your choice\n"
-                 "1 - store a formatted text file of accounts called\n"
-                 "    \"accounts.txt\" for printing\n"
-                 "2 - update an account\n"
-                 "3 - add a new account\n"
-                 "4 - delete an account\n"
-                 "5 - end program\n? ");
+    printf("\nEnter your choice\n"
+       "1 - store a formatted text file\n"
+       "2 - update an account\n"
+       "3 - add a new account\n"
+       "4 - delete an account\n"
+       "5 - apply loan\n"
+       "6 - repay loan\n"
+       "7 - end program\n? ");
 
     scanf("%u", &menuChoice); // receive choice from user
     return menuChoice;
