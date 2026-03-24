@@ -22,6 +22,7 @@ void newRecord(FILE *fPtr);
 void deleteRecord(FILE *fPtr);
 void applyLoan(FILE *fPtr);
 void repayLoan(FILE *fPtr);
+void loanReport(FILE *fPtr);
 
 int main(int argc, char *argv[])
 {
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
     }
 
     // enable user to specify action
-    while ((choice = enterChoice()) != 7)
+    while ((choice = enterChoice()) != 8)
     {
         switch (choice)
         {
@@ -63,6 +64,10 @@ int main(int argc, char *argv[])
 
         case 6:
             repayLoan(cfPtr);
+            break;
+
+        case 7:
+            loanReport(cfPtr);
             break;
         
         default:
@@ -305,6 +310,39 @@ void repayLoan(FILE *fPtr)
     printf("Loan repaid successfully!\n");
 }
 
+void loanReport(FILE *fPtr)
+{
+    struct clientData client;
+
+    // Move file pointer to beginning
+    rewind(fPtr);
+
+    printf("\n--------------------------------------\n");
+    printf("            LOAN REPORT               \n");
+    printf("--------------------------------------\n");
+
+    printf("%-10s %-15s %-15s %-10s\n",
+           "Acc No", "Last Name", "First Name", "Loan");
+
+    printf("--------------------------------------\n");
+
+    // Read each record from file
+    while (fread(&client, sizeof(struct clientData), 1, fPtr) == 1)
+    {
+        // Display only accounts having loan
+        if (client.acctNum != 0 && client.loan > 0)
+        {
+            printf("%-10d %-15s %-15s %-10.2f\n",
+                   client.acctNum,
+                   client.lastName,
+                   client.firstName,
+                   client.loan);
+        }
+    }
+
+    printf("--------------------------------------\n");
+}
+
 // enable user to input menu choice
 unsigned int enterChoice(void)
 {
@@ -317,7 +355,8 @@ unsigned int enterChoice(void)
        "4 - delete an account\n"
        "5 - apply loan\n"
        "6 - repay loan\n"
-       "7 - end program\n? ");
+       "7 - loan report\n"
+       "8 - end program\n? ");
 
     scanf("%u", &menuChoice); // receive choice from user
     return menuChoice;
